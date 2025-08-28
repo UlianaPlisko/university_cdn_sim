@@ -1,0 +1,5 @@
+$TTL 30
+@   IN SOA ns1.cdn.univ.test. admin.univ.test. (1 10 10 10 30)
+    IN NS ns1.cdn.univ.test.
+ns1 IN A 10.0.0.2
+@   IN A 10.0.0.4  ; Points to edge-fiit

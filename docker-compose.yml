@@ -1,0 +1,122 @@
+version: "3.9"
+
+networks:
+  core_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/29
+  net_fiit:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.1.0/29
+  net_fmph:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.2.0/29
+  net_fchpt:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.3.0/29
+
+services:
+  dns:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: secondary-dns
+    networks:
+      core_net:
+        ipv4_address: 10.0.0.2
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    volumes:
+      - ./bind/named.conf:/etc/bind/named.conf:ro
+      - ./bind/zones:/var/lib/bind:ro  # Note: BIND expects zones here
+    restart: unless-stopped
+
+  origin:
+    image: nginx:alpine
+    container_name: origin-library
+    networks:
+      core_net:
+        ipv4_address: 10.0.0.3
+    volumes:
+      - ./origin/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./origin/content:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  edge-fiit:
+    image: nginx:alpine
+    container_name: edge-fiit
+    networks:
+      core_net:
+        ipv4_address: 10.0.0.4
+    volumes:
+      - ./edge/nginx-fiit.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+  edge-fmph:
+    image: nginx:alpine
+    container_name: edge-fmph
+    networks:
+      core_net:
+        ipv4_address: 10.0.0.5
+    volumes:
+      - ./edge/nginx-fmph.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+  edge-fchpt:
+    image: nginx:alpine
+    container_name: edge-fchpt
+    networks:
+      core_net:
+        ipv4_address: 10.0.0.6
+    volumes:
+      - ./edge/nginx-fchpt.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+  # Clients: 2 per faculty (add more by duplicating services)
+  client-fiit-1:
+    image: curlimages/curl
+    command: ["sleep", "infinity"]
+    networks:
+      net_fiit: {}
+    dns: [10.0.0.2]  # Points to secondary DNS
+
+  client-fiit-2:
+    image: curlimages/curl
+    command: ["sleep", "infinity"]
+    networks:
+      net_fiit: {}
+    dns: [10.0.0.2]
+
+  client-fmph-1:
+    image: curlimages/curl
+    command: ["sleep", "infinity"]
+    networks:
+      net_fmph: {}
+    dns: [10.0.0.2]
+
+  client-fmph-2:
+    image: curlimages/curl
+    command: ["sleep", "infinity"]
+    networks:
+      net_fmph: {}
+    dns: [10.0.0.2]
+
+  client-fchpt-1:
+    image: curlimages/curl
+    command: ["sleep", "infinity"]
+    networks:
+      net_fchpt: {}
+    dns: [10.0.0.2]
+
+  client-fchpt-2:
+    image: curlimages/curl
+    command: ["sleep", "infinity"]
+    networks:
+      net_fchpt: {}
+    dns: [10.0.0.2]
