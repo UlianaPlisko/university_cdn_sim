@@ -5,12 +5,12 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.0.0/29
+        - subnet: 10.0.0.0/28
   net_fiit:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.1.0/29
+        - subnet: 10.0.1.0/28
   net_fmph:
     driver: bridge
     ipam:
@@ -24,7 +24,7 @@ networks:
 
 services:
   dns:
-    image: internetsystemsconsortium/bind9:9.18
+    image: ubuntu/bind9:latest
     container_name: secondary-dns
     networks:
       core_net:
@@ -34,9 +34,8 @@ services:
       - "53:53/tcp"
     volumes:
       - ./bind/named.conf:/etc/bind/named.conf:ro
-      - ./bind/zones:/var/lib/bind:ro  # Note: BIND expects zones here
-    restart: unless-stopped
-
+      - ./bind/zones/db.cdn.fiit:/etc/bind/db.cdn.fiit:ro
+    restart: no
   origin:
     image: nginx:alpine
     container_name: origin-library
@@ -78,16 +77,17 @@ services:
       - ./edge/nginx-fchpt.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
 
-  # Clients: 2 per faculty (add more by duplicating services)
   client-fiit-1:
     image: curlimages/curl
+    container_name: client-fiit-1
     command: ["sleep", "infinity"]
     networks:
       net_fiit: {}
-    dns: [10.0.0.2]  # Points to secondary DNS
+    dns: [10.0.0.2]
 
   client-fiit-2:
     image: curlimages/curl
+    container_name: client-fiit-2
     command: ["sleep", "infinity"]
     networks:
       net_fiit: {}
@@ -95,6 +95,7 @@ services:
 
   client-fmph-1:
     image: curlimages/curl
+    container_name: client-fmph-1
     command: ["sleep", "infinity"]
     networks:
       net_fmph: {}
@@ -102,6 +103,7 @@ services:
 
   client-fmph-2:
     image: curlimages/curl
+    container_name: client-fmph-2
     command: ["sleep", "infinity"]
     networks:
       net_fmph: {}
@@ -109,6 +111,7 @@ services:
 
   client-fchpt-1:
     image: curlimages/curl
+    container_name: client-fchpt-1
     command: ["sleep", "infinity"]
     networks:
       net_fchpt: {}
@@ -116,6 +119,7 @@ services:
 
   client-fchpt-2:
     image: curlimages/curl
+    container_name: client-fchpt-2
     command: ["sleep", "infinity"]
     networks:
       net_fchpt: {}
