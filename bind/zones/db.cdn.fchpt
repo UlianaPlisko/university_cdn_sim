@@ -7,6 +7,6 @@ $TTL 3600
         3600 ) ; minimum
 
     IN NS secondary-dns.cdn.univ.test.
-secondary-dns.cdn.univ.test. IN A 10.0.1.5
+secondary-dns.cdn.univ.test. IN A 10.0.3.5
 
-cdn.univ.test. IN A 10.0.1.4
+cdn.univ.test. IN A 10.0.3.4

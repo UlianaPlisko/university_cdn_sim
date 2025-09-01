@@ -5,22 +5,26 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.0.0/28
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
   net_fiit:
     driver: bridge
     ipam:
       config:
         - subnet: 10.0.1.0/28
+          gateway: 10.0.1.1
   net_fmph:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.2.0/29
+        - subnet: 10.0.2.0/28
+          gateway: 10.0.2.1
   net_fchpt:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.3.0/29
+        - subnet: 10.0.3.0/28
+          gateway: 10.0.3.1
 
 services:
   dns:
@@ -29,13 +33,23 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.2
-    ports:
-      - "53:53/udp"
-      - "53:53/tcp"
+      net_fiit:
+        ipv4_address: 10.0.1.5
+      net_fmph:
+        ipv4_address: 10.0.2.5
+      net_fchpt:
+        ipv4_address: 10.0.3.5
+    # REMOVE host port mapping while debugging; keep DNS internal to the compose
+    # ports:
+    #   - "53:53/udp"
+    #   - "53:53/tcp"
     volumes:
       - ./bind/named.conf:/etc/bind/named.conf:ro
-      - ./bind/zones/db.cdn.fiit:/etc/bind/db.cdn.fiit:ro
-    restart: no
+      - ./bind/zones/db.cdn.fiit:/etc/bind/zones/db.cdn.fiit:ro
+      - ./bind/zones/db.cdn.fmph:/etc/bind/zones/db.cdn.fmph:ro
+      - ./bind/zones/db.cdn.fchpt:/etc/bind/zones/db.cdn.fchpt:ro
+    restart: unless-stopped
+
   origin:
     image: nginx:alpine
     container_name: origin-library
@@ -53,6 +67,7 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.4
+      net_fiit: {}
     volumes:
       - ./edge/nginx-fiit.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
@@ -63,6 +78,7 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.5
+      net_fmph: {}
     volumes:
       - ./edge/nginx-fmph.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
@@ -73,6 +89,7 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.6
+      net_fchpt: {}
     volumes:
       - ./edge/nginx-fchpt.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
@@ -83,7 +100,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fiit: {}
-    dns: [10.0.0.2]
+    dns: [10.0.1.5]
 
   client-fiit-2:
     image: curlimages/curl
@@ -91,7 +108,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fiit: {}
-    dns: [10.0.0.2]
+    dns: [10.0.1.5]
 
   client-fmph-1:
     image: curlimages/curl
@@ -99,7 +116,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fmph: {}
-    dns: [10.0.0.2]
+    dns: [10.0.2.5]
 
   client-fmph-2:
     image: curlimages/curl
@@ -107,7 +124,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fmph: {}
-    dns: [10.0.0.2]
+    dns: [10.0.2.5]
 
   client-fchpt-1:
     image: curlimages/curl
@@ -115,7 +132,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fchpt: {}
-    dns: [10.0.0.2]
+    dns: [10.0.3.5]
 
   client-fchpt-2:
     image: curlimages/curl
@@ -123,4 +140,4 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fchpt: {}
-    dns: [10.0.0.2]
+    dns: [10.0.3.5]
