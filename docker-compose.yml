@@ -27,27 +27,44 @@ networks:
           gateway: 10.0.3.1
 
 services:
-  dns:
+  main-dns:
+    image: ubuntu/bind9:latest
+    container_name: main-dns
+    networks:
+      core_net:
+        ipv4_address: 10.0.0.7
+      net_fiit:
+        ipv4_address: 10.0.1.7
+      net_fmph:
+        ipv4_address: 10.0.2.7
+      net_fchpt:
+        ipv4_address: 10.0.3.7
+    volumes:
+      - ./bind/main/named.conf:/etc/bind/named.conf:ro
+      - ./bind/main/zones/db.cdn.fiit:/etc/bind/zones/db.cdn.fiit:ro
+      - ./bind/main/zones/db.cdn.fmph:/etc/bind/zones/db.cdn.fmph:ro
+      - ./bind/main/zones/db.cdn.fchpt:/etc/bind/zones/db.cdn.fchpt:ro
+      - ./bind/main/zones/db.cdn.default:/etc/bind/zones/db.cdn.default:ro
+    restart: unless-stopped
+
+  secondary-dns:
     image: ubuntu/bind9:latest
     container_name: secondary-dns
     networks:
       core_net:
-        ipv4_address: 10.0.0.2
+        ipv4_address: 10.0.0.3
       net_fiit:
         ipv4_address: 10.0.1.5
       net_fmph:
         ipv4_address: 10.0.2.5
       net_fchpt:
         ipv4_address: 10.0.3.5
-    # REMOVE host port mapping while debugging; keep DNS internal to the compose
-    # ports:
-    #   - "53:53/udp"
-    #   - "53:53/tcp"
     volumes:
-      - ./bind/named.conf:/etc/bind/named.conf:ro
-      - ./bind/zones/db.cdn.fiit:/etc/bind/zones/db.cdn.fiit:ro
-      - ./bind/zones/db.cdn.fmph:/etc/bind/zones/db.cdn.fmph:ro
-      - ./bind/zones/db.cdn.fchpt:/etc/bind/zones/db.cdn.fchpt:ro
+    - ./bind/named.conf:/etc/bind/named.conf:ro
+    - ./bind/zones/db.cdn.fiit:/etc/bind/zones/db.cdn.fiit:ro
+    - ./bind/zones/db.cdn.fmph:/etc/bind/zones/db.cdn.fmph:ro
+    - ./bind/zones/db.cdn.fchpt:/etc/bind/zones/db.cdn.fchpt:ro
+    - ./bind/zones/db.cdn.default:/etc/bind/zones/db.cdn.default:ro  # Add this
     restart: unless-stopped
 
   origin:
@@ -55,7 +72,7 @@ services:
     container_name: origin-library
     networks:
       core_net:
-        ipv4_address: 10.0.0.3
+        ipv4_address: 10.0.0.8
     volumes:
       - ./origin/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./origin/content:/usr/share/nginx/html:ro
@@ -67,7 +84,8 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.4
-      net_fiit: {}
+      net_fiit:
+        ipv4_address: 10.0.1.4
     volumes:
       - ./edge/nginx-fiit.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
@@ -78,7 +96,8 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.5
-      net_fmph: {}
+      net_fmph:
+        ipv4_address: 10.0.2.4
     volumes:
       - ./edge/nginx-fmph.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
@@ -89,18 +108,20 @@ services:
     networks:
       core_net:
         ipv4_address: 10.0.0.6
-      net_fchpt: {}
+      net_fchpt:
+        ipv4_address: 10.0.3.4
     volumes:
       - ./edge/nginx-fchpt.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
 
+  # Clients point to main-dns IP in their subnet
   client-fiit-1:
     image: curlimages/curl
     container_name: client-fiit-1
     command: ["sleep", "infinity"]
     networks:
       net_fiit: {}
-    dns: [10.0.1.5]
+    dns: [10.0.1.7]
 
   client-fiit-2:
     image: curlimages/curl
@@ -108,7 +129,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fiit: {}
-    dns: [10.0.1.5]
+    dns: [10.0.1.7]
 
   client-fmph-1:
     image: curlimages/curl
@@ -116,7 +137,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fmph: {}
-    dns: [10.0.2.5]
+    dns: [10.0.2.7]
 
   client-fmph-2:
     image: curlimages/curl
@@ -124,7 +145,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fmph: {}
-    dns: [10.0.2.5]
+    dns: [10.0.2.7]
 
   client-fchpt-1:
     image: curlimages/curl
@@ -132,7 +153,7 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fchpt: {}
-    dns: [10.0.3.5]
+    dns: [10.0.3.7]
 
   client-fchpt-2:
     image: curlimages/curl
@@ -140,4 +161,4 @@ services:
     command: ["sleep", "infinity"]
     networks:
       net_fchpt: {}
-    dns: [10.0.3.5]
+    dns: [10.0.3.7]

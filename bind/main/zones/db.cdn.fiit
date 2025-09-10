@@ -6,6 +6,6 @@ $TTL 3600
         604800 ; expire
         3600 ) ; minimum
 
-    IN NS secondary-dns.cdn.univ.test.
-secondary-dns.cdn.univ.test. IN A 10.0.1.5
-cdn.univ.test. IN A 10.0.1.4  
+    IN NS main-dns.cdn.univ.test.
+main-dns.cdn.univ.test. IN A 10.0.1.7  # main-dns FIIT IP
+cdn.univ.test. IN A 10.0.1.4           # edge-fiit static IP
